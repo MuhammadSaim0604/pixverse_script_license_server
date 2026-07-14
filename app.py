@@ -44,7 +44,7 @@ from models import (
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "pixverse_license_server_secret_2024_change_me")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "0912398BKJHia872KKJh")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 # Shared secret between sell_script and license_server
 SHARED_SECRET = os.environ.get(
     "LICENSE_SHARED_SECRET",
-    "PIXVERSE_SELL_SECRET_KEY_CHANGE_IN_PRODUCTION_2024"
+    "0912398BKJHia872KKJh"
 )
 
 
