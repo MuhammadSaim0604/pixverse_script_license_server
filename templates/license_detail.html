@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}License — {{ lic.license_key if lic else 'Not Found' }}{% endblock %}
+
+{% block content %}
+{% if not lic %}
+<div class="text-center py-5">
+  <i class="bi bi-x-circle text-danger" style="font-size:3rem"></i>
+  <p class="mt-2">License not found.</p>
+  <a href="/admin" class="btn btn-secondary">Back</a>
+</div>
+{% else %}
+
+<div class="row mb-3">
+  <div class="col">
+    <h5><i class="bi bi-key me-2 text-warning"></i>License Detail</h5>
+    <span class="key-badge">{{ lic.license_key }}</span>
+  </div>
+  <div class="col-auto">
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- ── Info Card ────────────────────────────────────────────────────────── -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Info</div>
+      <div class="card-body">
+        <table class="table table-dark table-sm mb-0" style="--bs-table-bg:transparent">
+          <tr><th class="text-muted">Customer</th><td>{{ lic.customer_name or '—' }}</td></tr>
+          <tr><th class="text-muted">Email</th><td>{{ lic.customer_email or '—' }}</td></tr>
+          <tr><th class="text-muted">Status</th><td>
+            <span class="badge {{ 'badge-active' if lic.is_active else 'badge-inactive' }}">
+              {{ 'Active' if lic.is_active else 'Revoked' }}
+            </span>
+          </td></tr>
+          <tr><th class="text-muted">Daily Limit</th><td>{{ lic.daily_limit }}</td></tr>
+          <tr><th class="text-muted">Created</th><td><small>{{ lic.created_at[:10] if lic.created_at else '—' }}</small></td></tr>
+          <tr><th class="text-muted">Activated</th><td><small>{{ lic.activated_at[:10] if lic.activated_at else 'Not yet' }}</small></td></tr>
+          <tr><th class="text-muted">Expires</th><td><small>{{ lic.expires_at[:10] if lic.expires_at else '∞ Never' }}</small></td></tr>
+          <tr><th class="text-muted">Last Verified</th><td><small>{{ lic.last_verified[:16] if lic.last_verified else '—' }}</small></td></tr>
+          <tr><th class="text-muted">Machine ID</th><td><small class="text-muted">{{ lic.machine_id[:20] if lic.machine_id else 'Not bound' }}…</small></td></tr>
+          <tr><th class="text-muted">Notes</th><td><small>{{ lic.notes or '—' }}</small></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Daily Usage History ───────────────────────────────────────────────── -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-calendar3 me-2"></i>Daily Usage (Last 30 Days)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Accounts Created</th>
+                <th>Usage</th>
+                <th>50% Sent</th>
+                <th>100% Sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in usage %}
+              {% set pct = (u.accounts_created / lic.daily_limit * 100) | round(1) if lic.daily_limit > 0 else 0 %}
+              <tr>
+                <td>{{ u.usage_date }}</td>
+                <td>{{ u.accounts_created }} / {{ lic.daily_limit }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="width:100px">
+                      <div class="progress" style="height:6px">
+                        <div class="progress-bar {% if pct >= 100 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
+                             style="width:{{ pct }}%"></div>
+                      </div>
+                    </div>
+                    <small>{{ pct }}%</small>
+                  </div>
+                </td>
+                <td>{% if u.milestone_50_sent %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}</td>
+                <td>{% if u.milestone_100_sent %}<i class="bi bi-check-circle-fill text-danger"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-3">No usage data</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit events for this license -->
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-activity me-2"></i>Recent Audit Events</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark table-hover table-sm mb-0">
+            <thead><tr><th>Time</th><th>Event</th><th>Details</th><th>IP</th></tr></thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
+                <td><small class="text-muted">{{ log.created_at[11:19] if log.created_at else '—' }}</small></td>
+                <td>
+                  <span class="badge
+                    {% if 'ok' in log.event_type %}bg-success
+                    {% elif 'fail' in log.event_type or 'tampered' in log.event_type %}bg-danger
+                    {% elif 'milestone' in log.event_type %}bg-warning text-dark
+                    {% else %}bg-secondary{% endif %}">
+                    {{ log.event_type }}
+                  </span>
+                </td>
+                <td><small class="text-muted">{{ log.details or '—' }}</small></td>
+                <td><small class="text-muted">{{ log.ip_address or '—' }}</small></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-center text-muted py-2">No events</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
