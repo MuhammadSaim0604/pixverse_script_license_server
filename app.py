@@ -28,6 +28,7 @@ import os
 import time
 import shutil
 import sqlite3
+import tempfile
 from datetime import datetime
 from functools import wraps
 from io import BytesIO
@@ -619,19 +620,26 @@ def admin_export_db():
     Database is exported with timestamp to prevent accidental overwrites.
     """
     try:
-        # Create a copy of the database to send (prevents locking issues)
-        export_buffer = BytesIO()
+        # Read the database file directly (SQLite databases are just files)
+        # First close any existing connections to prevent locking
+        import tempfile
         
-        with sqlite3.connect(str(DB_FILE)) as conn:
-            # Use backup functionality if available, else read raw bytes
-            backup_conn = sqlite3.connect(':memory:')
-            conn.backup(backup_conn)
+        # Create a temporary copy of the database
+        temp_fd, temp_path = tempfile.mkstemp(suffix=".db")
+        try:
+            # Use backup to create a clean copy
+            with sqlite3.connect(str(DB_FILE)) as source_conn:
+                with sqlite3.connect(temp_path) as temp_conn:
+                    source_conn.backup(temp_conn)
             
-        # Write in-memory database to buffer
-        backup_conn.backup(export_buffer)
-        backup_conn.close()
-        export_buffer.seek(0)
+            # Read the temporary file
+            with open(temp_path, "rb") as f:
+                db_data = f.read()
+        finally:
+            os.close(temp_fd)
+            os.unlink(temp_path)
         
+        export_buffer = BytesIO(db_data)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"license_server_backup_{timestamp}.db"
         
@@ -664,18 +672,27 @@ def admin_export_db_json():
         export_data = {
             "export_timestamp": datetime.now().isoformat(),
             "server_version": "1.0",
-            "tables": {}
+            "tables": {},
+            "schema": {}
         }
         
         with db.get_connection() as conn:
-            # Get all table names
+            # Get all user table names (exclude ALL SQLite internal tables including sqlite_sequence)
             tables = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'sqlite_sequence' ORDER BY name"
             ).fetchall()
             
             for table_row in tables:
                 table_name = table_row[0]
-                rows = conn.execute(f"SELECT * FROM {table_name}").fetchall()
+                
+                # Store the CREATE TABLE statement for accurate schema restoration
+                schema_stmt = conn.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                    (table_name,)
+                ).fetchone()
+                export_data["schema"][table_name] = schema_stmt[0] if schema_stmt else None
+                
+                rows = conn.execute(f"SELECT * FROM [{table_name}]").fetchall()
                 
                 # Convert rows to list of dicts
                 table_data = []
@@ -717,8 +734,9 @@ def admin_export_db_json():
 @login_required
 def admin_import_db():
     """
-    Import database from uploaded SQLite backup file.
+    Import database from uploaded SQLite or JSON backup file.
     Creates backup of current DB before import.
+    Supports both .db (SQLite) and .json (JSON export) formats.
     """
     if request.method == "GET":
         return render_template("import_db.html", 
@@ -734,26 +752,51 @@ def admin_import_db():
         return redirect(url_for("admin_import_db"))
     
     try:
-        # Validate file is SQLite database
         file_data = file.read()
-        if not file_data.startswith(b"SQLite format 3"):
-            flash("Invalid database file. Must be SQLite format.", "danger")
-            return redirect(url_for("admin_import_db"))
+        filename_lower = file.filename.lower()
         
         # Create backup of current database
         backup_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = DB_FILE.parent / f"license_server_backup_pre_import_{backup_timestamp}.db"
         shutil.copy2(DB_FILE, backup_path)
         
-        # Write imported database
-        with open(DB_FILE, "wb") as f:
-            f.write(file_data)
+        # Determine file type and import accordingly
+        if filename_lower.endswith(".json"):
+            # Import from JSON format
+            try:
+                import_data = json.loads(file_data.decode())
+                if "tables" not in import_data:
+                    flash("Invalid JSON format. Missing 'tables' key.", "danger")
+                    return redirect(url_for("admin_import_db"))
+                
+                # Recreate database from JSON
+                import_from_json(import_data)
+                import_format = "JSON"
+                
+            except json.JSONDecodeError as e:
+                flash(f"Invalid JSON format: {str(e)}", "danger")
+                return redirect(url_for("admin_import_db"))
+        
+        elif filename_lower.endswith((".db", ".sqlite", ".sqlite3")):
+            # Import SQLite database file
+            if not file_data.startswith(b"SQLite format 3"):
+                flash("Invalid database file. Must be SQLite format.", "danger")
+                return redirect(url_for("admin_import_db"))
+            
+            # Write imported database
+            with open(DB_FILE, "wb") as f:
+                f.write(file_data)
+            import_format = "SQLite"
+        
+        else:
+            flash("Unsupported file format. Use .db, .sqlite, .sqlite3, or .json", "danger")
+            return redirect(url_for("admin_import_db"))
         
         AuditLog.log("", "database_imported", 
-                    details=f"filename={file.filename} backup_created={backup_path.name}",
+                    details=f"filename={file.filename} format={import_format} backup_created={backup_path.name}",
                     ip_address=request.remote_addr)
         
-        flash(f"Database imported successfully! Backup saved: {backup_path.name}", "success")
+        flash(f"Database imported successfully ({import_format})! Backup saved: {backup_path.name}", "success")
         return redirect(url_for("admin_dashboard"))
         
     except Exception as e:
@@ -762,6 +805,128 @@ def admin_import_db():
                     ip_address=request.remote_addr)
         flash(f"Import failed: {str(e)}", "danger")
         return redirect(url_for("admin_import_db"))
+
+
+def infer_column_types(rows: list) -> dict:
+    """
+    Infer column types from data rows.
+    Returns {column_name: 'INTEGER'|'REAL'|'TEXT'}
+    """
+    if not rows:
+        return {}
+    
+    col_types = {}
+    for col in rows[0].keys():
+        # Default to TEXT
+        col_type = "TEXT"
+        
+        # Check if column contains numeric data
+        is_integer = True
+        is_real = True
+        
+        for row in rows:
+            val = row.get(col)
+            if val is None:
+                continue
+            
+            # Try to parse as integer
+            if is_integer:
+                try:
+                    int(val)
+                except (ValueError, TypeError):
+                    is_integer = False
+            
+            # Try to parse as float
+            if is_real and not is_integer:
+                try:
+                    float(val)
+                except (ValueError, TypeError):
+                    is_real = False
+        
+        if is_integer:
+            col_type = "INTEGER"
+        elif is_real:
+            col_type = "REAL"
+        
+        col_types[col] = col_type
+    
+    return col_types
+
+
+def import_from_json(import_data: dict) -> None:
+    """
+    Restore database from JSON export format.
+    Clears current database and repopulates from JSON data.
+    Uses original schema from export if available, otherwise infers types.
+    """
+    with db.get_connection() as conn:
+        c = conn.cursor()
+        
+        # Get list of user tables (exclude sqlite_* system tables)
+        existing_tables = c.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        ).fetchall()
+        
+        # Drop existing user tables
+        for (table_name,) in existing_tables:
+            c.execute(f"DROP TABLE IF EXISTS [{table_name}]")
+        
+        # Disable foreign key constraints temporarily
+        c.execute("PRAGMA foreign_keys=OFF")
+        
+        # Recreate tables from JSON using original schema if available
+        schema_dict = import_data.get("schema", {})
+        tables_dict = import_data.get("tables", {})
+        
+        for table_name in sorted(tables_dict.keys()):
+            # Skip SQLite internal tables
+            if table_name.startswith('sqlite_'):
+                continue
+            
+            rows = tables_dict[table_name]
+            if not rows:
+                continue
+            
+            # Recreate table using original schema if available
+            if table_name in schema_dict and schema_dict[table_name]:
+                # Use original CREATE TABLE statement
+                try:
+                    c.execute(schema_dict[table_name])
+                except sqlite3.OperationalError:
+                    # Schema creation failed, fall back to type inference
+                    first_row = rows[0]
+                    col_types = infer_column_types(rows)
+                    col_defs = ", ".join([f"[{col}] {col_types.get(col, 'TEXT')}" for col in first_row.keys()])
+                    c.execute(f"CREATE TABLE IF NOT EXISTS [{table_name}] ({col_defs})")
+            else:
+                # Infer types from data
+                first_row = rows[0]
+                col_types = infer_column_types(rows)
+                col_defs = ", ".join([f"[{col}] {col_types.get(col, 'TEXT')}" for col in first_row.keys()])
+                c.execute(f"CREATE TABLE IF NOT EXISTS [{table_name}] ({col_defs})")
+            
+            # Insert rows with proper type conversion
+            if rows:
+                first_row = rows[0]
+                columns = list(first_row.keys())
+                placeholders = ", ".join(["?" for _ in columns])
+                col_names = ", ".join([f"[{c}]" for c in columns])
+                
+                for row in rows:
+                    values = []
+                    for col in columns:
+                        val = row.get(col)
+                        # Keep None as is, SQLite will store as NULL
+                        values.append(val)
+                    
+                    c.execute(
+                        f"INSERT INTO [{table_name}] ({col_names}) VALUES ({placeholders})",
+                        values
+                    )
+        
+        # Re-enable foreign key constraints
+        c.execute("PRAGMA foreign_keys=ON")
+        conn.commit()
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────

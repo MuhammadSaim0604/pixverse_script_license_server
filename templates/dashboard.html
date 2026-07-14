@@ -2,439 +2,534 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-num">{{ stats.total_licenses }}</div>
-      <div class="stat-label"><i class="bi bi-key me-1"></i>Total Licenses</div>
+
+<!-- Stats Grid - Modern Glassmorphism Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-gradient-to-br from-[#161b22] to-[#1c2333] border border-[#30363d] rounded-2xl p-5 text-center hover:border-[#58a6ff] transition-all duration-300 group">
+        <div class="text-3xl font-bold bg-gradient-to-r from-[#58a6ff] to-[#79c0ff] bg-clip-text text-transparent">{{ stats.total_licenses }}</div>
+        <div class="text-[#8b949e] text-xs uppercase tracking-wider mt-1 flex items-center justify-center gap-1.5">
+            <i class="bi bi-key text-[#58a6ff]"></i> Total Licenses
+        </div>
     </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-num text-success">{{ stats.active_licenses }}</div>
-      <div class="stat-label"><i class="bi bi-check-circle me-1"></i>Active</div>
+    <div class="bg-gradient-to-br from-[#161b22] to-[#1c2333] border border-[#30363d] rounded-2xl p-5 text-center hover:border-[#56d364] transition-all duration-300 group">
+        <div class="text-3xl font-bold text-[#56d364]">{{ stats.active_licenses }}</div>
+        <div class="text-[#8b949e] text-xs uppercase tracking-wider mt-1 flex items-center justify-center gap-1.5">
+            <i class="bi bi-check-circle text-[#56d364]"></i> Active
+        </div>
     </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-num text-warning">{{ stats.today_created }}</div>
-      <div class="stat-label"><i class="bi bi-calendar-day me-1"></i>Created Today</div>
+    <div class="bg-gradient-to-br from-[#161b22] to-[#1c2333] border border-[#30363d] rounded-2xl p-5 text-center hover:border-[#e3b341] transition-all duration-300 group">
+        <div class="text-3xl font-bold text-[#e3b341]">{{ stats.today_created }}</div>
+        <div class="text-[#8b949e] text-xs uppercase tracking-wider mt-1 flex items-center justify-center gap-1.5">
+            <i class="bi bi-calendar-day text-[#e3b341]"></i> Created Today
+        </div>
     </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="stat-card">
-      <div class="stat-num text-info">{{ stats.daily_limit }}</div>
-      <div class="stat-label"><i class="bi bi-speedometer2 me-1"></i>Daily Limit</div>
+    <div class="bg-gradient-to-br from-[#161b22] to-[#1c2333] border border-[#30363d] rounded-2xl p-5 text-center hover:border-[#f0883e] transition-all duration-300 group">
+        <div class="text-3xl font-bold text-[#f0883e]">{{ stats.daily_limit }}</div>
+        <div class="text-[#8b949e] text-xs uppercase tracking-wider mt-1 flex items-center justify-center gap-1.5">
+            <i class="bi bi-speedometer2 text-[#f0883e]"></i> Daily Limit
+        </div>
     </div>
-  </div>
 </div>
 
-<div class="row g-4">
+<!-- Main Grid - Two Column Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-  <!-- ── License List ─────────────────────────────────────────────────────── -->
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-list-ul me-2"></i>License Keys</span>
-        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
-          <i class="bi bi-plus-lg me-1"></i>New License
-        </button>
-      </div>
-      <div class="card-body p-0">
-        {% if stats.all_keys %}
-        <div class="table-responsive">
-          <table class="table table-dark table-hover table-striped mb-0">
-            <thead>
-              <tr>
-                <th>License Key</th>
-                <th>Customer</th>
-                <th>Today Used</th>
-                <th>Daily Limit</th>
-                <th>Status</th>
-                <th>Expires</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for k in stats.all_keys %}
-              <tr>
-                <td>
-                  <span class="key-badge">{{ k.license_key }}</span>
-                </td>
-                <td>
-                  <div>{{ k.customer_name or '—' }}</div>
-                  <small class="text-muted">{{ k.customer_email or '' }}</small>
-                </td>
-                <td>
-                  {% set used = k.accounts_created or 0 %}
-                  {% set pct  = (used / k.daily_limit * 100) | round(1) if k.daily_limit > 0 else 0 %}
-                  <div class="d-flex align-items-center gap-2">
-                    <div style="width:80px">
-                      <div class="progress" style="height:6px">
-                        <div class="progress-bar {% if pct >= 100 %}bg-danger{% elif pct >= 50 %}bg-warning{% else %}bg-success{% endif %}"
-                             style="width:{{ pct }}%"></div>
-                      </div>
+    <!-- Left Column: License List -->
+    <div class="xl:col-span-2 space-y-6">
+
+        <!-- License Table Card -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden shadow-lg shadow-black/20">
+            <!-- Card Header -->
+            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#30363d] bg-[#1c2333]/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-[#1f6feb]/20 flex items-center justify-center">
+                        <i class="bi bi-key-fill text-[#58a6ff] text-sm"></i>
                     </div>
-                    <small>{{ used }}/{{ k.daily_limit }}</small>
-                  </div>
-                </td>
-                <td>{{ k.daily_limit }}</td>
-                <td>
-                  {% if k.is_active %}
-                    <span class="badge badge-active">Active</span>
-                  {% else %}
-                    <span class="badge badge-inactive">Revoked</span>
-                  {% endif %}
-                </td>
-                <td><small class="text-muted">{{ k.expires_at[:10] if k.expires_at else '∞' }}</small></td>
-                <td>
-                  <div class="btn-group btn-group-sm">
-                    <a href="/admin/license/{{ k.license_key }}" class="btn btn-outline-secondary" title="Details">
-                      <i class="bi bi-eye"></i>
+                    <span class="font-semibold text-[#c9d1d9]">License Keys</span>
+                    <span class="bg-[#30363d] text-[#8b949e] text-xs px-2 py-0.5 rounded-full">{{ stats.all_keys|length }}</span>
+                </div>
+                <button class="bg-gradient-to-r from-[#238636] to-[#2ea043] hover:from-[#2ea043] hover:to-[#3fb950] text-white text-sm font-medium px-4 py-1.5 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg shadow-[#238636]/25 hover:shadow-[#238636]/40"
+                        data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>New License</span>
+                </button>
+            </div>
+
+            <!-- Table Body -->
+            <div class="overflow-x-auto">
+                {% if stats.all_keys %}
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-[#21262d] bg-[#0d1117]/50">
+                            <th class="text-left px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider">License</th>
+                            <th class="text-left px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider hidden md:table-cell">Customer</th>
+                            <th class="text-left px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider hidden lg:table-cell">Usage</th>
+                            <th class="text-left px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Status</th>
+                            <th class="text-left px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider hidden lg:table-cell">Expires</th>
+                            <th class="text-right px-4 py-3 text-[#8b949e] font-medium text-xs uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in stats.all_keys %}
+                        {% set used = k.accounts_created or 0 %}
+                        {% set limit = k.daily_limit|int %}
+                        {% set pct = (used / limit * 100) | round(1) if limit > 0 else 0 %}
+                        <tr class="border-b border-[#21262d] hover:bg-[#1c2128] transition-colors duration-200 group">
+                            <td class="px-4 py-3">
+                                <span class="font-mono text-[#58a6ff] text-xs bg-[#1f6feb]/10 px-2 py-1 rounded-md">{{ k.license_key }}</span>
+                            </td>
+                            <td class="px-4 py-3 hidden md:table-cell">
+                                <div class="text-[#c9d1d9]">{{ k.customer_name or '—' }}</div>
+                                <div class="text-[#8b949e] text-xs">{{ k.customer_email or '' }}</div>
+                            </td>
+                            <td class="px-4 py-3 hidden lg:table-cell">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 min-w-[60px]">
+                                        <div class="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+                                            <div class="progress-bar h-full rounded-full transition-all duration-500 
+                                                {% if pct >= 100 %}bg-[#f85149]
+                                                {% elif pct >= 50 %}bg-[#e3b341]
+                                                {% else %}bg-[#56d364]{% endif %}" 
+                                                style="width:{{ pct }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[#8b949e] text-xs font-medium min-w-[40px]">{{ used }}/{{ limit }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 hidden sm:table-cell">
+                                {% if k.is_active %}
+                                <span class="inline-flex items-center gap-1 bg-[#238636]/20 text-[#56d364] text-xs px-2.5 py-1 rounded-full border border-[#238636]/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#56d364] animate-pulse"></span>
+                                    Active
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 bg-[#f85149]/20 text-[#f85149] text-xs px-2.5 py-1 rounded-full border border-[#f85149]/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#f85149]"></span>
+                                    Revoked
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 hidden lg:table-cell text-[#8b949e] text-xs font-mono">
+                                {{ k.expires_at[:10] if k.expires_at else '∞' }}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-0.5">
+                                    <a href="/admin/license/{{ k.license_key }}" 
+                                       class="text-[#8b949e] hover:text-[#c9d1d9] p-1.5 rounded-lg hover:bg-[#30363d] transition-all duration-200" 
+                                       title="Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button class="text-[#8b949e] hover:text-[#c9d1d9] p-1.5 rounded-lg hover:bg-[#30363d] transition-all duration-200" 
+                                            title="Edit" onclick="openEdit({{ k | tojson }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form method="POST" action="/admin/revoke" class="inline">
+                                        <input type="hidden" name="license_key" value="{{ k.license_key }}">
+                                        <input type="hidden" name="action" value="{{ 'reactivate' if not k.is_active else 'revoke' }}">
+                                        <button type="submit" 
+                                                class="text-[#8b949e] hover:text-[#c9d1d9] p-1.5 rounded-lg hover:bg-[#30363d] transition-all duration-200"
+                                                title="{{ 'Reactivate' if not k.is_active else 'Revoke' }}">
+                                            <i class="bi {{ 'bi-check-circle' if not k.is_active else 'bi-slash-circle' }}"></i>
+                                        </button>
+                                    </form>
+                                    <button class="text-[#f85149] hover:text-[#ff7b72] p-1.5 rounded-lg hover:bg-[#3a1a1a] transition-all duration-200" 
+                                            title="Delete" onclick="confirmDelete('{{ k.license_key }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-16 text-[#8b949e]">
+                    <div class="w-16 h-16 mx-auto rounded-full bg-[#30363d]/30 flex items-center justify-center mb-4">
+                        <i class="bi bi-key text-3xl opacity-50"></i>
+                    </div>
+                    <p class="font-medium">No licenses yet</p>
+                    <p class="text-sm">Create your first license using the button above</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Sidebar -->
+    <div class="space-y-5">
+
+        <!-- Quick Actions Card -->
+        <div class="bg-gradient-to-br from-[#161b22] to-[#1c2333] border border-[#30363d] rounded-2xl p-5">
+            <h3 class="text-sm font-semibold text-[#c9d1d9] mb-3 flex items-center gap-2">
+                <i class="bi bi-lightning-fill text-[#e3b341]"></i>
+                Quick Actions
+            </h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button class="bg-[#1f6feb]/10 hover:bg-[#1f6feb]/20 border border-[#1f6feb]/20 text-[#58a6ff] text-sm font-medium py-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5"
+                        data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-circle"></i> Create
+                </button>
+                <a href="/admin/audit" class="bg-[#30363d]/50 hover:bg-[#30363d] text-[#c9d1d9] text-sm font-medium py-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5">
+                    <i class="bi bi-journal-text"></i> Audit
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-[#30363d] flex items-center justify-between bg-[#1c2333]/30">
+                <span class="font-semibold text-sm flex items-center gap-2">
+                    <i class="bi bi-activity text-[#58a6ff]"></i>
+                    Recent Activity
+                </span>
+                <span class="text-[#8b949e] text-xs">{{ stats.recent_logs|length }} events</span>
+            </div>
+            <div class="divide-y divide-[#21262d] max-h-[280px] overflow-y-auto">
+                {% for log in stats.recent_logs %}
+                <div class="px-4 py-2.5 hover:bg-[#1c2128] transition-colors duration-150">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5
+                                {% if 'ok' in log.event_type or 'created' in log.event_type %}bg-[#56d364]
+                                {% elif 'fail' in log.event_type or 'revoked' in log.event_type %}bg-[#f85149]
+                                {% elif 'milestone' in log.event_type %}bg-[#e3b341]
+                                {% else %}bg-[#30363d]{% endif %}">
+                            </span>
+                            <div class="min-w-0">
+                                <span class="text-xs px-1.5 py-0.5 rounded
+                                    {% if 'ok' in log.event_type or 'created' in log.event_type or 'reactivated' in log.event_type %}bg-[#238636]/20 text-[#56d364]
+                                    {% elif 'fail' in log.event_type or 'revoked' in log.event_type or 'deleted' in log.event_type %}bg-[#f85149]/20 text-[#f85149]
+                                    {% elif 'milestone' in log.event_type %}bg-[#e3b341]/20 text-[#e3b341]
+                                    {% else %}bg-[#30363d]/50 text-[#8b949e]{% endif %}">
+                                    {{ log.event_type }}
+                                </span>
+                                <span class="text-[#8b949e] text-xs font-mono ml-1">{{ log.license_key[:8] if log.license_key else '—' }}…</span>
+                            </div>
+                        </div>
+                        <span class="text-[#8b949e] text-xs whitespace-nowrap">{{ log.created_at[11:16] if log.created_at else '' }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="px-4 py-6 text-center text-[#8b949e] text-sm">
+                    <i class="bi bi-inbox text-2xl block mb-1 opacity-50"></i>
+                    No activity yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Script Management -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-[#30363d] flex items-center justify-between bg-[#1c2333]/30">
+                <span class="font-semibold text-sm flex items-center gap-2">
+                    <i class="bi bi-file-earmark-code text-[#f0883e]"></i>
+                    Script Manager
+                </span>
+                {% set active_script = scripts | selectattr('is_active', 'eq', 1) | list | first if scripts else none %}
+                {% if active_script %}
+                <span class="inline-flex items-center gap-1 bg-[#238636]/20 text-[#56d364] text-xs px-2 py-0.5 rounded-full border border-[#238636]/30">
+                    <span class="w-1 h-1 rounded-full bg-[#56d364] animate-pulse"></span>
+                    Active
+                </span>
+                {% else %}
+                <span class="text-[#f85149] text-xs">No active script</span>
+                {% endif %}
+            </div>
+            <div class="p-4">
+                {% if active_script %}
+                <div class="bg-[#0d1117] rounded-xl p-3 mb-3 border border-[#30363d]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[#56d364] text-sm font-mono">{{ active_script.filename }}</span>
+                        <span class="text-[#8b949e] text-xs">v{{ active_script.version_label or '—' }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-1 text-xs text-[#8b949e]">
+                        <span>{{ (active_script.file_size / 1024) | round(1) }} KB</span>
+                        <span>{{ active_script.uploaded_at[:10] }}</span>
+                        <span class="font-mono">{{ active_script.sha256[:16] }}…</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="POST" action="/admin/upload_script" enctype="multipart/form-data">
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('scriptFileInput').click()">
+                        <i class="bi bi-cloud-upload text-2xl text-[#8b949e] block mb-1"></i>
+                        <p class="text-[#8b949e] text-xs" id="uploadZoneText">Drop .pyc file or click to browse</p>
+                    </div>
+                    <input type="file" name="script_file" id="scriptFileInput" class="hidden" accept=".pyc,.py" required
+                           onchange="document.getElementById('uploadZoneText').textContent = this.files[0]?.name || 'Drop .pyc file or click to browse'">
+
+                    <div class="flex gap-2 mt-2">
+                        <input type="text" name="version_label" class="flex-1 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all"
+                               placeholder="Version label">
+                        <button type="submit" class="bg-[#1f6feb] hover:bg-[#388bfd] text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                    </div>
+                </form>
+
+                {% if scripts %}
+                <details class="mt-3">
+                    <summary class="text-[#8b949e] text-xs cursor-pointer hover:text-[#c9d1d9] transition-colors">
+                        Version History ({{ scripts | length }})
+                    </summary>
+                    <div class="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                        {% for s in scripts %}
+                        <div class="flex items-center justify-between p-1.5 rounded hover:bg-[#1c2128] transition-colors">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="bi bi-{{ 'check-circle-fill' if s.is_active else 'circle' }} text-[#56d364] text-xs"></i>
+                                <span class="text-xs truncate {% if s.is_active %}text-[#56d364]{% else %}text-[#c9d1d9]{% endif %}">{{ s.filename }}</span>
+                                <span class="text-[#8b949e] text-xs">{{ s.version_label or '—' }}</span>
+                            </div>
+                            <div class="flex gap-0.5">
+                                {% if not s.is_active %}
+                                <form method="POST" action="/admin/script/activate/{{ s.id }}">
+                                    <button type="submit" class="text-[#238636] hover:text-[#56d364] p-1 rounded hover:bg-[#1a3a22] transition-all" title="Activate">
+                                        <i class="bi bi-check-circle text-xs"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="POST" action="/admin/script/delete/{{ s.id }}"
+                                      onsubmit="return confirm('Delete this script version?')">
+                                    <button type="submit" class="text-[#f85149] hover:text-[#ff7b72] p-1 rounded hover:bg-[#3a1a1a] transition-all" title="Delete">
+                                        <i class="bi bi-trash text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Security & Backup -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-[#30363d] bg-[#1c2333]/30">
+                <span class="font-semibold text-sm flex items-center gap-2">
+                    <i class="bi bi-shield-lock text-[#f0883e]"></i>
+                    Security & Backup
+                </span>
+            </div>
+            <div class="p-4 space-y-3">
+                <!-- Change Password -->
+                <form method="POST" action="/admin/change_pw" class="space-y-2">
+                    <div class="flex gap-2">
+                        <input type="password" name="current_password" class="flex-1 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all"
+                               placeholder="Current password" required>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="password" name="new_password" class="flex-1 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all"
+                               placeholder="New password" required minlength="8">
+                        <input type="password" name="confirm_password" class="flex-1 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all"
+                               placeholder="Confirm" required>
+                    </div>
+                    <button type="submit" class="w-full bg-[#1f6feb]/10 hover:bg-[#1f6feb]/20 border border-[#1f6feb]/20 text-[#58a6ff] text-sm font-medium py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5">
+                        <i class="bi bi-key"></i> Update Password
+                    </button>
+                </form>
+
+                <!-- Database Backup -->
+                <div class="grid grid-cols-3 gap-2">
+                    <a href="{{ url_for('admin_export_db') }}" class="bg-[#238636]/10 hover:bg-[#238636]/20 border border-[#238636]/20 text-[#56d364] text-xs font-medium py-1.5 rounded-lg transition-all text-center">
+                        <i class="bi bi-download block text-sm"></i>
+                        .db
                     </a>
-                    <button class="btn btn-outline-primary" title="Edit"
-                            onclick="openEdit({{ k | tojson }})">
-                      <i class="bi bi-pencil"></i>
+                    <a href="{{ url_for('admin_export_db_json') }}" class="bg-[#1f6feb]/10 hover:bg-[#1f6feb]/20 border border-[#1f6feb]/20 text-[#58a6ff] text-xs font-medium py-1.5 rounded-lg transition-all text-center">
+                        <i class="bi bi-download block text-sm"></i>
+                        JSON
+                    </a>
+                    <a href="{{ url_for('admin_import_db') }}" class="bg-[#e3b341]/10 hover:bg-[#e3b341]/20 border border-[#e3b341]/20 text-[#e3b341] text-xs font-medium py-1.5 rounded-lg transition-all text-center">
+                        <i class="bi bi-upload block text-sm"></i>
+                        Import
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+<!-- ── Modals (Placed outside content block for proper positioning) ── -->
+{% block modals %}
+
+<!-- Create License Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-[#161b22] border border-[#30363d] text-[#c9d1d9] rounded-2xl shadow-2xl">
+            <div class="modal-header border-b border-[#30363d] px-6 py-4 flex items-center justify-between">
+                <h5 class="text-lg font-semibold flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-full bg-[#238636]/20 flex items-center justify-center">
+                        <i class="bi bi-plus-circle text-[#56d364]"></i>
+                    </span>
+                    Create New License
+                </h5>
+                <button type="button" class="text-[#8b949e] hover:text-[#c9d1d9] text-2xl leading-none transition-colors" data-bs-dismiss="modal">&times;</button>
+            </div>
+            <form method="POST" action="/admin/create">
+                <div class="modal-body p-6 space-y-4">
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Customer Name</label>
+                        <input type="text" name="customer_name" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" placeholder="e.g. John Doe">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Customer Email</label>
+                        <input type="email" name="customer_email" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" placeholder="john@example.com">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Daily Account Limit <span class="text-[#8b949e]">(max {{ stats.daily_limit }})</span></label>
+                        <input type="number" name="daily_limit" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" value="{{ stats.daily_limit }}" min="1" max="{{ stats.daily_limit }}" required>
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Expiry Date <span class="text-[#8b949e]">(optional)</span></label>
+                        <input type="datetime-local" name="expires_at" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Notes</label>
+                        <textarea name="notes" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-t border-[#30363d] px-6 py-4 flex justify-end gap-3">
+                    <button type="button" class="bg-[#30363d] hover:bg-[#484f58] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="bg-gradient-to-r from-[#238636] to-[#2ea043] hover:from-[#2ea043] hover:to-[#3fb950] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[#238636]/25">
+                        <i class="bi bi-key"></i> Generate License
                     </button>
-                    <form method="POST" action="/admin/revoke" class="d-inline">
-                      <input type="hidden" name="license_key" value="{{ k.license_key }}">
-                      <input type="hidden" name="action" value="{{ 'reactivate' if not k.is_active else 'revoke' }}">
-                      <button type="submit" class="btn {{ 'btn-outline-success' if not k.is_active else 'btn-outline-warning' }}"
-                              title="{{ 'Reactivate' if not k.is_active else 'Revoke' }}">
-                        <i class="bi {{ 'bi-check-circle' if not k.is_active else 'bi-slash-circle' }}"></i>
-                      </button>
-                    </form>
-                    <button class="btn btn-outline-danger" title="Delete"
-                            onclick="confirmDelete('{{ k.license_key }}')">
-                      <i class="bi bi-trash"></i>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit License Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-[#161b22] border border-[#30363d] text-[#c9d1d9] rounded-2xl shadow-2xl">
+            <div class="modal-header border-b border-[#30363d] px-6 py-4 flex items-center justify-between">
+                <h5 class="text-lg font-semibold flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-full bg-[#1f6feb]/20 flex items-center justify-center">
+                        <i class="bi bi-pencil text-[#58a6ff]"></i>
+                    </span>
+                    Edit License
+                </h5>
+                <button type="button" class="text-[#8b949e] hover:text-[#c9d1d9] text-2xl leading-none transition-colors" data-bs-dismiss="modal">&times;</button>
+            </div>
+            <form method="POST" action="/admin/edit">
+                <input type="hidden" name="license_key" id="editKey">
+                <div class="modal-body p-6 space-y-4">
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">License Key</label>
+                        <input type="text" id="editKeyDisplay" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm font-mono text-[#58a6ff] cursor-default" readonly>
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Customer Name</label>
+                        <input type="text" name="customer_name" id="editName" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Customer Email</label>
+                        <input type="email" name="customer_email" id="editEmail" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Daily Limit <span class="text-[#8b949e]">(max {{ stats.daily_limit }})</span></label>
+                        <input type="number" name="daily_limit" id="editLimit" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" min="1" max="{{ stats.daily_limit }}" required>
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Expiry Date</label>
+                        <input type="datetime-local" name="expires_at" id="editExpiry" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[#8b949e] text-sm block mb-1.5">Notes</label>
+                        <textarea name="notes" id="editNotes" class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-4 py-2.5 text-sm text-[#c9d1d9] placeholder-[#484f58] focus:border-[#1f6feb] focus:ring-2 focus:ring-[#1f6feb]/25 transition-all" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-t border-[#30363d] px-6 py-4 flex justify-end gap-3">
+                    <button type="button" class="bg-[#30363d] hover:bg-[#484f58] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="bg-gradient-to-r from-[#1f6feb] to-[#388bfd] hover:from-[#388bfd] hover:to-[#58a6ff] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[#1f6feb]/25">
+                        <i class="bi bi-save"></i> Save Changes
                     </button>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                </div>
+            </form>
         </div>
-        {% else %}
-        <div class="text-center py-5 text-muted">
-          <i class="bi bi-key" style="font-size:3rem"></i>
-          <p class="mt-2">No licenses yet. Create one above.</p>
-        </div>
-        {% endif %}
-      </div>
     </div>
-  </div>
-
-  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-  <div class="col-lg-4">
-
-    <!-- Recent Audit Events -->
-    <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-activity me-2"></i>Recent Events</div>
-      <div class="card-body p-0">
-        <ul class="list-group list-group-flush">
-          {% for log in stats.recent_logs %}
-          <li class="list-group-item" style="background:transparent;border-color:#30363d;color:#c9d1d9">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <span class="badge
-                  {% if 'ok' in log.event_type or 'created' in log.event_type or 'reactivated' in log.event_type %}bg-success
-                  {% elif 'fail' in log.event_type or 'revoked' in log.event_type or 'deleted' in log.event_type %}bg-danger
-                  {% elif 'milestone' in log.event_type %}bg-warning text-dark
-                  {% else %}bg-secondary{% endif %}
-                  me-1">{{ log.event_type }}</span>
-                <small class="text-muted">{{ log.license_key[:8] if log.license_key else '—' }}…</small>
-              </div>
-              <small class="text-muted">{{ log.created_at[11:16] if log.created_at else '' }}</small>
-            </div>
-          </li>
-          {% else %}
-          <li class="list-group-item text-muted text-center py-3" style="background:transparent;border:0">No events yet</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <!-- Upload Script -->
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-file-earmark-code me-2"></i>Script Upload</span>
-        {% set active_script = scripts | selectattr('is_active', 'eq', 1) | list | first if scripts else none %}
-        {% if active_script %}
-          <span class="script-badge"><i class="bi bi-check-circle me-1"></i>Active</span>
-        {% else %}
-          <span class="script-badge" style="border-color:rgba(248,81,73,.4);color:#f85149;background:rgba(248,81,73,.1)"><i class="bi bi-x-circle me-1"></i>None</span>
-        {% endif %}
-      </div>
-      <div class="card-body">
-        {% if active_script %}
-        <div class="mb-3 p-2" style="background:rgba(35,134,54,.08);border:1px solid rgba(35,134,54,.3);border-radius:6px">
-          <div class="d-flex justify-content-between">
-            <small class="text-success"><i class="bi bi-file-earmark-binary me-1"></i><strong>{{ active_script.filename }}</strong></small>
-            <small class="text-muted">v{{ active_script.version_label or '—' }}</small>
-          </div>
-          <small class="text-muted d-block mt-1">{{ (active_script.file_size / 1024) | round(1) }} KB · {{ active_script.uploaded_at[:10] }}</small>
-          <small class="text-muted font-monospace">{{ active_script.sha256[:24] }}…</small>
-        </div>
-        {% endif %}
-        <form method="POST" action="/admin/upload_script" enctype="multipart/form-data">
-          <div class="mb-2">
-            <label class="form-label text-muted small">Script File (.pyc or .py)</label>
-            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('scriptFileInput').click()">
-              <i class="bi bi-cloud-upload" style="font-size:1.6rem;color:var(--muted)"></i>
-              <p class="mb-0 mt-1 small text-muted" id="uploadZoneText">Click or drag &amp; drop your .pyc file</p>
-            </div>
-            <input type="file" name="script_file" id="scriptFileInput" class="d-none" accept=".pyc,.py" required
-                   onchange="document.getElementById('uploadZoneText').textContent = this.files[0]?.name || 'Click or drag & drop'">
-          </div>
-          <div class="mb-2">
-            <input type="text" name="version_label" class="form-control form-control-sm"
-                   placeholder="Version label (e.g. v1.2.0)">
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm w-100">
-            <i class="bi bi-upload me-1"></i>Upload &amp; Activate
-          </button>
-        </form>
-
-        {% if scripts %}
-        <hr style="border-color:var(--border);margin:1rem 0">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <small class="text-muted">Version History</small>
-          <small class="text-muted">{{ scripts | length }} file{{ 's' if scripts | length != 1 else '' }}</small>
-        </div>
-        <div style="max-height:180px;overflow-y:auto">
-          {% for s in scripts %}
-          <div class="d-flex align-items-center justify-content-between mb-1 p-1"
-               style="border-radius:4px;background:{{ 'rgba(35,134,54,.1)' if s.is_active else 'rgba(255,255,255,.03)' }}">
-            <div style="min-width:0">
-              <small class="d-block text-truncate" style="color:{{ '#56d364' if s.is_active else 'var(--text)' }}">
-                <i class="bi bi-{{ 'check-circle-fill' if s.is_active else 'circle' }} me-1"></i>{{ s.filename }}
-              </small>
-              <small class="text-muted" style="font-size:.7rem">
-                {{ s.version_label or '—' }} · {{ (s.file_size/1024)|round(1) }}KB · {{ s.uploaded_at[:10] }}
-              </small>
-            </div>
-            <div class="d-flex gap-1 ms-2 flex-shrink-0">
-              {% if not s.is_active %}
-              <form method="POST" action="/admin/script/activate/{{ s.id }}">
-                <button type="submit" class="btn btn-outline-success btn-sm py-0 px-1" title="Activate" style="font-size:.7rem">
-                  <i class="bi bi-check-circle"></i>
-                </button>
-              </form>
-              {% endif %}
-              <form method="POST" action="/admin/script/delete/{{ s.id }}"
-                    onsubmit="return confirm('Delete this script version?')">
-                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Delete" style="font-size:.7rem">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </form>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Change Password -->
-    <div class="card">
-      <div class="card-header"><i class="bi bi-lock me-2"></i>Change Password</div>
-      <div class="card-body">
-        <form method="POST" action="/admin/change_pw">
-          <div class="mb-2">
-            <input type="password" name="current_password" class="form-control form-control-sm" placeholder="Current password" required>
-          </div>
-          <div class="mb-2">
-            <input type="password" name="new_password" class="form-control form-control-sm" placeholder="New password (8+ chars)" required minlength="8">
-          </div>
-          <div class="mb-2">
-            <input type="password" name="confirm_password" class="form-control form-control-sm" placeholder="Confirm new password" required>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm w-100">Update Password</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Database Backup & Restore -->
-    <div class="card mt-3">
-      <div class="card-header"><i class="bi bi-database me-2"></i>Database Backup</div>
-      <div class="card-body">
-        <div class="d-grid gap-2 mb-2">
-          <a href="{{ url_for('admin_export_db') }}" class="btn btn-outline-info btn-sm">
-            <i class="bi bi-download me-1"></i>Export (.db)
-          </a>
-          <a href="{{ url_for('admin_export_db_json') }}" class="btn btn-outline-info btn-sm">
-            <i class="bi bi-download me-1"></i>Export (JSON)
-          </a>
-          <a href="{{ url_for('admin_import_db') }}" class="btn btn-outline-warning btn-sm">
-            <i class="bi bi-upload me-1"></i>Import Backup
-          </a>
-        </div>
-        <small class="text-muted d-block">
-          <i class="bi bi-info-circle me-1"></i>
-          Export creates downloadable backup. Import restores previous backup safely.
-        </small>
-      </div>
-    </div>
-
-  </div>
 </div>
 
-<!-- ── Create License Modal ─────────────────────────────────────────────────── -->
-<div class="modal fade" id="createModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9">
-      <div class="modal-header" style="border-color:#30363d">
-        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Create New License</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form method="POST" action="/admin/create">
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label text-muted">Customer Name</label>
-            <input type="text" name="customer_name" class="form-control" placeholder="e.g. John Doe">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Customer Email</label>
-            <input type="email" name="customer_email" class="form-control" placeholder="john@example.com">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Daily Account Limit <small>(max {{ stats.daily_limit }})</small></label>
-            <input type="number" name="daily_limit" class="form-control"
-                   value="{{ stats.daily_limit }}" min="1" max="{{ stats.daily_limit }}" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Expiry Date (optional)</label>
-            <input type="datetime-local" name="expires_at" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Notes</label>
-            <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
-          </div>
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content bg-[#161b22] border border-[#f85149] text-[#c9d1d9] rounded-2xl shadow-2xl">
+            <div class="modal-body text-center p-8">
+                <div class="w-16 h-16 mx-auto rounded-full bg-[#f85149]/20 flex items-center justify-center mb-4">
+                    <i class="bi bi-exclamation-triangle text-[#f85149] text-3xl"></i>
+                </div>
+                <p class="font-semibold text-[#c9d1d9]">Delete this license?</p>
+                <p class="text-[#8b949e] text-sm mt-1 font-mono" id="deleteKeyText"></p>
+                <p class="text-[#f85149] text-xs mt-3 bg-[#f85149]/10 px-3 py-1.5 rounded-lg inline-block">⚠️ This action is permanent</p>
+            </div>
+            <div class="modal-footer border-t border-[#30363d] px-6 py-4 flex justify-center gap-3">
+                <button type="button" class="bg-[#30363d] hover:bg-[#484f58] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="/admin/delete" id="deleteForm">
+                    <input type="hidden" name="license_key" id="deleteKey">
+                    <button type="submit" class="bg-[#f85149] hover:bg-[#ff7b72] text-white text-sm font-medium px-5 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[#f85149]/25">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </form>
+            </div>
         </div>
-        <div class="modal-footer" style="border-color:#30363d">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-success"><i class="bi bi-key me-1"></i>Generate License</button>
-        </div>
-      </form>
     </div>
-  </div>
 </div>
 
-<!-- ── Edit License Modal ──────────────────────────────────────────────────── -->
-<div class="modal fade" id="editModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content" style="background:#161b22;border:1px solid #30363d;color:#c9d1d9">
-      <div class="modal-header" style="border-color:#30363d">
-        <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit License</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <form method="POST" action="/admin/edit">
-        <input type="hidden" name="license_key" id="editKey">
-        <div class="modal-body">
-          <div class="mb-2">
-            <label class="form-label text-muted">License Key</label>
-            <input type="text" id="editKeyDisplay" class="form-control" readonly style="font-family:monospace;color:#58a6ff">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Customer Name</label>
-            <input type="text" name="customer_name" id="editName" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Customer Email</label>
-            <input type="email" name="customer_email" id="editEmail" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Daily Limit (max {{ stats.daily_limit }})</label>
-            <input type="number" name="daily_limit" id="editLimit" class="form-control"
-                   min="1" max="{{ stats.daily_limit }}" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Expiry Date</label>
-            <input type="datetime-local" name="expires_at" id="editExpiry" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted">Notes</label>
-            <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer" style="border-color:#30363d">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- ── Delete Confirm Modal ──────────────────────────────────────────────── -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content" style="background:#161b22;border:1px solid #f85149;color:#c9d1d9">
-      <div class="modal-body text-center py-4">
-        <i class="bi bi-exclamation-triangle text-danger" style="font-size:2.5rem"></i>
-        <p class="mt-2 mb-1">Delete this license?</p>
-        <p class="text-muted small mb-3" id="deleteKeyText"></p>
-        <p class="text-danger small">This action is permanent.</p>
-      </div>
-      <div class="modal-footer justify-content-center" style="border-color:#30363d">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <form method="POST" action="/admin/delete" id="deleteForm">
-          <input type="hidden" name="license_key" id="deleteKey">
-          <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 function openEdit(k) {
-  document.getElementById('editKey').value        = k.license_key;
-  document.getElementById('editKeyDisplay').value = k.license_key;
-  document.getElementById('editName').value        = k.customer_name  || '';
-  document.getElementById('editEmail').value       = k.customer_email || '';
-  document.getElementById('editLimit').value       = k.daily_limit;
-  document.getElementById('editNotes').value       = k.notes          || '';
-  if (k.expires_at) {
-    document.getElementById('editExpiry').value = k.expires_at.slice(0,16);
-  }
-  new bootstrap.Modal(document.getElementById('editModal')).show();
+    document.getElementById('editKey').value = k.license_key;
+    document.getElementById('editKeyDisplay').value = k.license_key;
+    document.getElementById('editName').value = k.customer_name || '';
+    document.getElementById('editEmail').value = k.customer_email || '';
+    document.getElementById('editLimit').value = k.daily_limit;
+    document.getElementById('editNotes').value = k.notes || '';
+    if (k.expires_at) {
+        document.getElementById('editExpiry').value = k.expires_at.slice(0,16);
+    }
+    new bootstrap.Modal(document.getElementById('editModal')).show();
 }
+
 function confirmDelete(key) {
-  document.getElementById('deleteKey').value    = key;
-  document.getElementById('deleteKeyText').textContent = key;
-  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    document.getElementById('deleteKey').value = key;
+    document.getElementById('deleteKeyText').textContent = key;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
+
 // Auto-dismiss flash alerts
 setTimeout(() => {
-  document.querySelectorAll('.alert-msg .alert').forEach(el => {
-    bootstrap.Alert.getOrCreateInstance(el).close();
-  });
+    document.querySelectorAll('.alert-msg .alert').forEach(el => {
+        bootstrap.Alert.getOrCreateInstance(el).close();
+    });
 }, 5000);
 
 // Upload zone drag-and-drop
 (function() {
-  const zone  = document.getElementById('uploadZone');
-  const input = document.getElementById('scriptFileInput');
-  const label = document.getElementById('uploadZoneText');
-  if (!zone) return;
+    const zone = document.getElementById('uploadZone');
+    const input = document.getElementById('scriptFileInput');
+    const label = document.getElementById('uploadZoneText');
+    if (!zone) return;
 
-  ['dragenter','dragover'].forEach(ev =>
-    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); }));
-  ['dragleave','drop'].forEach(ev =>
-    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('dragover'); }));
+    ['dragenter','dragover'].forEach(ev =>
+        zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev =>
+        zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('dragover'); }));
 
-  zone.addEventListener('drop', e => {
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    label.textContent = file.name;
-  });
+    zone.addEventListener('drop', e => {
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        label.textContent = file.name;
+    });
 })();
 </script>
 {% endblock %}

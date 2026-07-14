@@ -2,61 +2,62 @@
 {% block title %}Audit Log{% endblock %}
 
 {% block content %}
-<div class="row mb-3">
-  <div class="col">
-    <h5><i class="bi bi-journal-text me-2 text-info"></i>Audit Log</h5>
-    <p class="text-muted small">Last 200 events across all licenses</p>
-  </div>
-  <div class="col-auto">
-    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
-  </div>
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <div>
+        <h2 class="text-lg font-semibold"><i class="bi bi-journal-text mr-2 text-[#60a5fa]"></i>Audit Log</h2>
+        <p class="text-[#8b949e] text-sm">Last 200 events across all licenses</p>
+    </div>
+    <a href="/admin" class="bg-[#30363d] hover:bg-[#484f58] text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
 </div>
 
-<div class="card">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-dark table-hover table-striped mb-0">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Event</th>
-            <th>License Key</th>
-            <th>Machine ID</th>
-            <th>Details</th>
-            <th>IP</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in logs %}
-          <tr>
-            <td><small class="text-muted">{{ log.created_at[:19] if log.created_at else '—' }}</small></td>
-            <td>
-              <span class="badge
-                {% if 'ok' in log.event_type or 'created' in log.event_type or 'reactivated' in log.event_type %}bg-success
-                {% elif 'fail' in log.event_type or 'tampered' in log.event_type or 'revoked' in log.event_type or 'deleted' in log.event_type %}bg-danger
-                {% elif 'milestone' in log.event_type %}bg-warning text-dark
-                {% elif 'mismatch' in log.event_type or 'expired' in log.event_type %}bg-warning text-dark
-                {% else %}bg-secondary{% endif %}">
-                {{ log.event_type }}
-              </span>
-            </td>
-            <td>
-              {% if log.license_key %}
-              <span class="key-badge small">{{ log.license_key }}</span>
-              {% else %}—{% endif %}
-            </td>
-            <td><small class="text-muted">{{ log.machine_id[:16] if log.machine_id else '—' }}…</small></td>
-            <td><small class="text-muted">{{ log.details or '—' }}</small></td>
-            <td><small class="text-muted">{{ log.ip_address or '—' }}</small></td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="6" class="text-center py-5 text-muted">No audit events recorded yet.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="text-[#8b949e] border-b border-[#30363d]">
+                <tr>
+                    <th class="text-left px-4 py-2.5 font-medium">Time</th>
+                    <th class="text-left px-4 py-2.5 font-medium">Event</th>
+                    <th class="text-left px-4 py-2.5 font-medium hidden sm:table-cell">License Key</th>
+                    <th class="text-left px-4 py-2.5 font-medium hidden md:table-cell">Machine ID</th>
+                    <th class="text-left px-4 py-2.5 font-medium hidden lg:table-cell">Details</th>
+                    <th class="text-left px-4 py-2.5 font-medium hidden xl:table-cell">IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr class="border-b border-[#21262d] hover:bg-[#1c2128] transition-colors">
+                    <td class="px-4 py-2.5 text-[#8b949e] text-xs whitespace-nowrap">{{ log.created_at[:19] if log.created_at else '—' }}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="text-xs px-1.5 py-0.5 rounded whitespace-nowrap
+                            {% if 'ok' in log.event_type or 'created' in log.event_type or 'reactivated' in log.event_type %}bg-[#238636] text-white
+                            {% elif 'fail' in log.event_type or 'tampered' in log.event_type or 'revoked' in log.event_type or 'deleted' in log.event_type %}bg-[#f85149] text-white
+                            {% elif 'milestone' in log.event_type %}bg-[#e3b341] text-[#0d1117]
+                            {% elif 'mismatch' in log.event_type or 'expired' in log.event_type %}bg-[#e3b341] text-[#0d1117]
+                            {% else %}bg-[#30363d] text-[#c9d1d9]{% endif %}">
+                            {{ log.event_type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2.5 hidden sm:table-cell">
+                        {% if log.license_key %}
+                        <span class="key-badge text-xs">{{ log.license_key }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-2.5 text-[#8b949e] text-xs font-mono hidden md:table-cell">{{ log.machine_id[:16] if log.machine_id else '—' }}…</td>
+                    <td class="px-4 py-2.5 text-[#8b949e] text-xs hidden lg:table-cell max-w-[200px] truncate">{{ log.details or '—' }}</td>
+                    <td class="px-4 py-2.5 text-[#8b949e] text-xs hidden xl:table-cell">{{ log.ip_address or '—' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-[#8b949e] py-8">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-50"></i>
+                        No audit events recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-  </div>
 </div>
 {% endblock %}
