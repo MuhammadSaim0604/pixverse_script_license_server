@@ -26,16 +26,19 @@ import json
 import logging
 import os
 import time
+import shutil
+import sqlite3
 from datetime import datetime
 from functools import wraps
+from io import BytesIO
 
 from flask import (Flask, render_template, request, jsonify,
-                   session, redirect, url_for, flash)
+                   session, redirect, url_for, flash, send_file)
 
 import base64
 from models import (
     AdminUser, LicenseKey, DailyUsage, AuditLog, ScriptStorage,
-    get_dashboard_stats, DAILY_ACCOUNT_LIMIT, _ts
+    get_dashboard_stats, DAILY_ACCOUNT_LIMIT, _ts, db, DB_FILE
 )
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
@@ -604,6 +607,161 @@ def admin_delete_script(script_id):
                  ip_address=request.remote_addr)
     flash(f"Script #{script_id} deleted.", "warning")
     return redirect(url_for("admin_dashboard"))
+
+
+# ─── Database Export / Import ─────────────────────────────────────────────────
+
+@app.route("/admin/export_db", methods=["GET"])
+@login_required
+def admin_export_db():
+    """
+    Export the entire SQLite database as a downloadable file.
+    Database is exported with timestamp to prevent accidental overwrites.
+    """
+    try:
+        # Create a copy of the database to send (prevents locking issues)
+        export_buffer = BytesIO()
+        
+        with sqlite3.connect(str(DB_FILE)) as conn:
+            # Use backup functionality if available, else read raw bytes
+            backup_conn = sqlite3.connect(':memory:')
+            conn.backup(backup_conn)
+            
+        # Write in-memory database to buffer
+        backup_conn.backup(export_buffer)
+        backup_conn.close()
+        export_buffer.seek(0)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"license_server_backup_{timestamp}.db"
+        
+        AuditLog.log("", "database_exported", 
+                    details=f"file={filename}", 
+                    ip_address=request.remote_addr)
+        
+        return send_file(
+            export_buffer,
+            mimetype="application/octet-stream",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"Database export failed: {e}")
+        AuditLog.log("", "database_export_failed", details=str(e),
+                    ip_address=request.remote_addr)
+        flash(f"Export failed: {str(e)}", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/export_db_json", methods=["GET"])
+@login_required
+def admin_export_db_json():
+    """
+    Export database as JSON format for easier inspection/import.
+    Includes all tables and data.
+    """
+    try:
+        export_data = {
+            "export_timestamp": datetime.now().isoformat(),
+            "server_version": "1.0",
+            "tables": {}
+        }
+        
+        with db.get_connection() as conn:
+            # Get all table names
+            tables = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            ).fetchall()
+            
+            for table_row in tables:
+                table_name = table_row[0]
+                rows = conn.execute(f"SELECT * FROM {table_name}").fetchall()
+                
+                # Convert rows to list of dicts
+                table_data = []
+                if rows:
+                    columns = [description[0] for description in conn.execute(
+                        f"PRAGMA table_info({table_name})"
+                    ).fetchall()]
+                    
+                    for row in rows:
+                        row_dict = dict(row)
+                        table_data.append(row_dict)
+                
+                export_data["tables"][table_name] = table_data
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"license_server_backup_{timestamp}.json"
+        
+        json_buffer = BytesIO(json.dumps(export_data, indent=2, default=str).encode())
+        
+        AuditLog.log("", "database_exported_json", 
+                    details=f"file={filename}", 
+                    ip_address=request.remote_addr)
+        
+        return send_file(
+            json_buffer,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"JSON export failed: {e}")
+        AuditLog.log("", "database_export_json_failed", details=str(e),
+                    ip_address=request.remote_addr)
+        flash(f"JSON export failed: {str(e)}", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/import_db", methods=["GET", "POST"])
+@login_required
+def admin_import_db():
+    """
+    Import database from uploaded SQLite backup file.
+    Creates backup of current DB before import.
+    """
+    if request.method == "GET":
+        return render_template("import_db.html", 
+                             admin_user=session.get("admin_user", "admin"))
+    
+    if "backup_file" not in request.files:
+        flash("No file selected for import", "danger")
+        return redirect(url_for("admin_import_db"))
+    
+    file = request.files["backup_file"]
+    if not file.filename:
+        flash("No file selected for import", "danger")
+        return redirect(url_for("admin_import_db"))
+    
+    try:
+        # Validate file is SQLite database
+        file_data = file.read()
+        if not file_data.startswith(b"SQLite format 3"):
+            flash("Invalid database file. Must be SQLite format.", "danger")
+            return redirect(url_for("admin_import_db"))
+        
+        # Create backup of current database
+        backup_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = DB_FILE.parent / f"license_server_backup_pre_import_{backup_timestamp}.db"
+        shutil.copy2(DB_FILE, backup_path)
+        
+        # Write imported database
+        with open(DB_FILE, "wb") as f:
+            f.write(file_data)
+        
+        AuditLog.log("", "database_imported", 
+                    details=f"filename={file.filename} backup_created={backup_path.name}",
+                    ip_address=request.remote_addr)
+        
+        flash(f"Database imported successfully! Backup saved: {backup_path.name}", "success")
+        return redirect(url_for("admin_dashboard"))
+        
+    except Exception as e:
+        logger.error(f"Database import failed: {e}")
+        AuditLog.log("", "database_import_failed", details=str(e),
+                    ip_address=request.remote_addr)
+        flash(f"Import failed: {str(e)}", "danger")
+        return redirect(url_for("admin_import_db"))
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────

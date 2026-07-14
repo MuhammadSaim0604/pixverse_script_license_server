@@ -255,6 +255,28 @@
       </div>
     </div>
 
+    <!-- Database Backup & Restore -->
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-database me-2"></i>Database Backup</div>
+      <div class="card-body">
+        <div class="d-grid gap-2 mb-2">
+          <a href="{{ url_for('admin_export_db') }}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-download me-1"></i>Export (.db)
+          </a>
+          <a href="{{ url_for('admin_export_db_json') }}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-download me-1"></i>Export (JSON)
+          </a>
+          <a href="{{ url_for('admin_import_db') }}" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-upload me-1"></i>Import Backup
+          </a>
+        </div>
+        <small class="text-muted d-block">
+          <i class="bi bi-info-circle me-1"></i>
+          Export creates downloadable backup. Import restores previous backup safely.
+        </small>
+      </div>
+    </div>
+
   </div>
 </div>
 
